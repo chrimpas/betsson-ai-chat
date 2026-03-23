@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0">
+  <title>Betsson AI Chat</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── APP SHELL ── */
+    .app {
+      width: 375px;
+      height: 800px;
+      overflow: hidden;
+      position: relative;
+      background: #E2E3E8;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      width: 375px;
+      height: 50px;
+      background: #FF6600;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 16px 16px 0;
+    }
+    .status-time {
+      font-family: -apple-system, 'SF Pro Text', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.17px;
+      line-height: normal;
+    }
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Signal bars */
+    .sig-bar {
+      background: #fff;
+      border-radius: 1px;
+      width: 3px;
+    }
+    .wifi-icon, .battery-icon { display: flex; align-items: center; }
+
+    /* ── MAIN NAV HEADER ── */
+    .nav-header {
+      width: 375px;
+      height: 48px;
+      background: #FF6600;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      gap: 24px;
+    }
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      min-width: 72px;
+    }
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-logo {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      min-width: 72px;
+      justify-content: flex-end;
+    }
+
+    /* ── CHAT SUB-HEADER ── */
+    .chat-subheader {
+      width: 375px;
+      height: 52px;
+      background: #EEEFF2;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      gap: 8px;
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      flex-shrink: 0;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .subheader-title-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .subheader-title {
+      font-family: -apple-system, 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: rgba(4,4,6,0.87);
+      line-height: 1.2;
+    }
+
+    /* ── NOTICE BAR ── */
+    .notice-bar {
+      width: 375px;
+      height: 30px;
+      background: #E2E3E8;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+    }
+    .notice-text {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.7);
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    /* ── MESSAGES AREA ── */
+    .messages-area {
+      width: 375px;
+      height: 556px; /* 800 - 50 - 48 - 52 - 30 - 64 */
+      background: #E2E3E8;
+      flex-shrink: 0;
+      overflow-y: auto;
+      padding: 8px 16px 72px; /* 56px tray + 16px gap — pre-reserved so smartScroll has range */
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      scroll-behavior: smooth;
+      /* no padding-bottom transition — prevents layout jump when betslip appears */
+    }
+    .messages-area::-webkit-scrollbar { width: 0; }
+
+    /* user bubble */
+    .user-message {
+      display: flex;
+      padding-left: 100px;
+    }
+    .user-bubble {
+      flex: 1;
+      background: #F7F7F9;
+      border: 1px solid #FF6600;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .user-bubble p {
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: #040406;
+      line-height: 1.2;
+    }
+
+    /* AI response */
+    .ai-response {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+    .ai-text {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: #000000;
+      line-height: 1.2;
+    }
+
+    /* Event card */
+    .event-card {
+      background: #F7F7F9;
+      border-radius: 8px;
+      padding: 0 8px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .event-card-header {
+      height: 62px;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    .event-card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+    .event-name {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: rgba(4,4,6,0.7);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-league {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.45);
+      line-height: 1.2;
+    }
+    .event-right-area { width: 83px; height: 48px; flex-shrink: 0; }
+    .event-divider {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #BFC1CA;
+    }
+    .selection-btn {
+      display: flex;
+      align-items: center;
+      background: #E2E3E8;
+      border-radius: 8px;
+      height: 36px;
+      padding: 0 8px;
+      gap: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+    .selection-btn.active {
+      background: #FF6600;
+    }
+    .sel-name {
+      flex: 1;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.87);
+      line-height: 1.2;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: color 0.2s ease;
+    }
+    .selection-btn.active .sel-name {
+      color: #FDFDFD;
+    }
+    .sel-odds {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(4,4,6,0.87);
+      line-height: 1.2;
+      padding-left: 16px;
+      flex-shrink: 0;
+      transition: color 0.2s ease;
+    }
+    .selection-btn.active .sel-odds {
+      color: #FDFDFD;
+    }
+
+    /* ── BETSLIP BAR (above input, after bet placed) ── */
+    @keyframes betslip-enter {
+      0%   { opacity: 0; transform: translateY(12px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes betslip-shimmer {
+      0%   { transform: translateX(-150%); }
+      100% { transform: translateX(500%); }
+    }
+    /* Background tray — hidden by default, shown only when betslip is active */
+    .betslip-bg-tray {
+      position: absolute;
+      bottom: 64px;
+      left: 0;
+      width: 375px;
+      height: 56px;
+      background: #E2E3E8;
+      z-index: 20;
+      pointer-events: none;
+      display: none;
+    }
+    .betslip-bg-tray.visible {
+      display: block;
+    }
+
+    .betslip-bar {
+      position: absolute;
+      bottom: 80px; /* 64px footer + 16px tray gap so badge top = tray top */
+      left: 0;
+      width: 375px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+      z-index: 25;
+      opacity: 0;
+      pointer-events: none;
+      /* no default transform or transition — animation alone drives entry */
+    }
+    .betslip-bar.visible {
+      pointer-events: all;
+      animation: betslip-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .betslip-badge {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      background: #FF6600;
+      border-radius: 8px;
+      width: 343px;
+      padding: 8px 12px;
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .betslip-badge.betslip-shimmer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.18) 38%,
+        rgba(255, 255, 255, 0.35) 50%,
+        rgba(255, 255, 255, 0.18) 62%,
+        transparent 100%
+      );
+      transform: translateX(-150%);
+      animation: betslip-shimmer 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      pointer-events: none;
+      border-radius: 8px;
+    }
+    .betslip-num-box {
+      background: #fff;
+      border-radius: 2px;
+      width: 16px;
+      height: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .betslip-num-text {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #FF6600;
+      line-height: 1.2;
+      text-align: center;
+    }
+    .betslip-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fdfdfd;
+      min-width: 0;
+    }
+    .betslip-single-label {
+      flex: 1;
+      height: 17px;
+      display: flex;
+      align-items: center;
+      line-height: 1.2;
+      min-width: 0;
+    }
+    .betslip-odds-text {
+      height: 17px;
+      width: 49px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      text-align: right;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+
+    /* ── CHAT FOOTER ── */
+    .chat-footer {
+      width: 375px;
+      height: 64px;
+      background: #F7F7F9;
+      border-radius: 12px 12px 0 0;
+      box-shadow: 0px -2px 4px 0px rgba(54,54,54,0.12);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      gap: 8px;
+    }
+    .chat-input-field {
+      flex: 1;
+      height: 48px;
+      background: #F7F7F9;
+      border: 1px solid #BFC1CA;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      cursor: text;
+      overflow: hidden;
+    }
+    .chat-input-real {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.87);
+      line-height: 1.2;
+      width: 100%;
+    }
+    .chat-input-real::placeholder {
+      color: rgba(4,4,6,0.45);
+    }
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      background: #FFFFFF;
+      border: 1px solid #D2D4DA;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      padding: 2px 4px;
+      overflow: hidden;
+    }
+
+    /* ── TYPEWRITER / STREAM ANIMATION ── */
+    .ai-response > * {
+      opacity: 0;
+    }
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: #000;
+      margin-left: 1px;
+      vertical-align: text-bottom;
+      animation: blink 0.6s step-end infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+    .event-card  { transition: opacity 0.4s ease; }
+
+    /* ── PPM MATCH CARD ── */
+    .ppm-card {
+      background: #f7f7f9;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      transition: opacity 0.4s ease;
+    }
+    .ppm-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+    }
+    .ppm-event-row { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; width: 100%; flex-shrink: 0; }
+    /* top row */
+    .ppm-top-row { display: flex; gap: 8px; align-items: center; width: 100%; flex-shrink: 0; }
+    .ppm-league {
+      flex: 1; min-width: 0;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 10px; font-weight: 400;
+      color: rgba(4,4,6,0.45); line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ppm-event-meta { display: flex; gap: 4px; height: 16px; align-items: center; justify-content: flex-end; flex-shrink: 0; }
+    .ppm-meta-icon { width: 12px; height: 12px; overflow: hidden; position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .ppm-meta-divider { background: #e2e3e8; height: 12px; width: 1px; flex-shrink: 0; }
+    .ppm-meta-time {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 10px; font-weight: 600;
+      color: #4a90e2; line-height: 1.2;
+      letter-spacing: 0.064em;
+      white-space: nowrap; text-align: right;
+    }
+    /* match info */
+    .ppm-match-info {
+      display: flex; align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd;
+      width: 100%; flex-shrink: 0;
+    }
+    .ppm-teams-scores { display: flex; gap: 4px; height: 44px; align-items: center; flex: 1; min-width: 0; }
+    .ppm-teams { display: flex; flex-direction: column; flex: 1; min-width: 0; justify-content: center; }
+    .ppm-team-row { display: flex; gap: 4px; align-items: center; width: 100%; flex-shrink: 0; }
+    .ppm-badge-orange {
+      width: 14px; height: 14px;
+      background: #f8ae40; border: 1px solid #f8ae40;
+      border-radius: 100px; overflow: hidden;
+      flex-shrink: 0; position: relative;
+    }
+    .ppm-badge-flag {
+      width: 24px; height: 24px;
+      border-radius: 50%; overflow: hidden;
+      flex-shrink: 0; position: relative;
+    }
+    .ppm-team-name {
+      flex: 1; min-width: 0;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px; font-weight: 600;
+      color: #040406; line-height: 1.2;
+    }
+    .ppm-score-col { width: 10px; height: 34px; align-self: flex-end; flex-shrink: 0; }
+    /* market line */
+    .ppm-market-container { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; width: 100%; flex-shrink: 0; }
+    .ppm-market-line {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      height: 48px; width: 100%; flex-shrink: 0;
+    }
+    .ppm-player-info { grid-column: 1 / span 4; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; }
+    .ppm-player-name {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px; font-weight: 600;
+      color: rgba(4,4,6,0.87); line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;
+    }
+    .ppm-market-type {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 10px; font-weight: 400;
+      color: rgba(4,4,6,0.7); line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;
+    }
+    .ppm-sel-empty { grid-column: 5 / span 3; }
+    .ppm-sel-btn {
+      grid-column: 8 / span 3;
+      background: #eeeff2; border-radius: 8px;
+      padding: 4px; height: 48px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer; gap: 4px;
+      transition: background 0.2s ease;
+    }
+    .ppm-sel-btn.active { background: #FF6600; }
+    .ppm-sel-value { display: flex; align-items: center; justify-content: center; padding: 0 16px; height: 16px; }
+    .ppm-sel-odds {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px; font-weight: 600;
+      color: #040406; line-height: 1.2;
+      text-align: center; white-space: nowrap;
+      transition: color 0.2s ease;
+    }
+    .ppm-sel-btn.active .ppm-sel-odds { color: #fdfdfd; }
+
+    /* ── QUICKBET PANEL ── */
+    .quickbet-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 375px;
+      z-index: 30;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+    }
+    .quickbet-overlay.visible {
+      transform: translateY(0);
+    }
+    .qb-outer {
+      background: #777a88;
+      border-radius: 16px 16px 0 0;
+      padding: 8px 8px 0;
+    }
+    .qb-inner {
+      background: #f7f7f9;
+      border-radius: 8px 8px 0 0;
+      padding: 0 8px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    /* drag bar */
+    .qb-drag-bar {
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 4px 0;
+      flex-shrink: 0;
+    }
+    .qb-drag-handle {
+      width: 48px;
+      height: 4px;
+      background: #d2d4da;
+      border-radius: 9999px;
+    }
+    .qb-close-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 24px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    /* event info */
+    .qb-event-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 48px;
+      padding-top: 8px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .qb-trash-btn {
+      width: 28px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 4px 8px;
+    }
+    .qb-market-details {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      max-height: 48px;
+    }
+    .qb-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      width: 258px;
+      padding-right: 4px;
+    }
+    .qb-selection {
+      display: flex;
+      gap: 4px;
+      align-items: baseline;
+      font-size: 14px;
+      color: rgba(4,4,6,0.7);
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .qb-sel-label {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-weight: 400;
+    }
+    .qb-sel-value {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-weight: 600;
+    }
+    .qb-market-name {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.87);
+      line-height: 1.2;
+      padding-bottom: 4px;
+      max-width: 229px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .qb-odds-val {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #040406;
+      line-height: 1.2;
+      text-align: right;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    /* stake row */
+    .qb-stake-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .qb-stake-input {
+      display: flex;
+      height: 36px;
+      border: 1px solid #777a88;
+      border-radius: 4px;
+      overflow: hidden;
+      width: 120px;
+      flex-shrink: 0;
+      background: #eeeff2;
+    }
+    .qb-currency {
+      background: #e2e3e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.7);
+      flex-shrink: 0;
+      line-height: 1.2;
+    }
+    .qb-amount {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 8px;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(4,4,6,0.7);
+      text-align: right;
+      line-height: 1.2;
+    }
+    .qb-add-btn {
+      flex: 1;
+      height: 36px;
+      background: #e2e3e8;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: #040406;
+      cursor: pointer;
+      min-width: 0;
+      line-height: 1.2;
+    }
+    /* utils row */
+    .qb-utils {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .qb-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .qb-switch {
+      width: 35px;
+      height: 20px;
+      background: #bfc1ca;
+      border-radius: 9999px;
+      position: relative;
+      flex-shrink: 0;
+      transform: rotate(180deg);
+    }
+    .qb-switch-knob {
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .qb-toggle-label {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: #040406;
+      line-height: 1.2;
+      width: 105px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .qb-payout {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #61aa00;
+      line-height: 1.2;
+      white-space: nowrap;
+      padding-right: 8px;
+    }
+    /* place bet */
+    .qb-place-btn {
+      width: 100%;
+      height: 36px;
+      background: #40b840;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: #fdfdfd;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1.2;
+      transition: background 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .qb-place-btn.loading {
+      cursor: default;
+    }
+    .qb-place-btn.success {
+      background: #61aa00;
+      cursor: default;
+    }
+    /* spinner */
+    .btn-spinner {
+      display: none;
+      width: 22px;
+      height: 22px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: btn-spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes btn-spin {
+      to { transform: rotate(360deg); }
+    }
+    /* checkmark */
+    .btn-check {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    /* state switches */
+    .qb-place-btn.loading  .btn-text    { display: none; }
+    .qb-place-btn.loading  .btn-spinner { display: block; }
+    .qb-place-btn.loading  .btn-check   { display: none; }
+    .qb-place-btn.success  .btn-text    { display: none; }
+    .qb-place-btn.success  .btn-spinner { display: none; }
+    .qb-place-btn.success  .btn-check   { display: flex; }
+
+    /* ── RECEIPT MODE ── */
+    .qb-inner.receipt-mode {
+      height: 204px; /* matches form drawer height exactly — no viewport shift */
+      padding-bottom: 12px;
+    }
+    #qb-form { display: flex; flex-direction: column; width: 100%; }
+    #qb-receipt { display: none; flex-direction: column; align-items: center; width: 100%; flex: 1; min-height: 0; position: relative; }
+    #qb-close-receipt { position: absolute; right: 0; top: 0; left: auto; }
+    .qb-inner.receipt-mode #qb-form   { display: none; }
+    .qb-inner.receipt-mode #qb-receipt { display: flex; }
+
+    /* receipt: coupon details */
+    .qb-coupon-details {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 16px;
+      align-items: flex-end;
+      padding-top: 8px;
+      width: 100%;
+      min-height: 0;
+    }
+    .qb-bet-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    .qb-bet-placed-title {
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: #61aa00;
+      text-align: center;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    .qb-coupon-id-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .qb-coupon-id-text {
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(4,4,6,0.7);
+      text-align: center;
+      text-transform: uppercase;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .qb-copy-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .qb-date-text {
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(4,4,6,0.45);
+      text-align: center;
+      line-height: 1.2;
+    }
+    /* bet share button */
+    .qb-share-btn {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 24px;
+      background: #e2e3e8;
+      border-radius: 4px;
+      padding: 0 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .qb-share-text {
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: #040406;
+      text-transform: uppercase;
+      white-space: nowrap;
+      line-height: 1.2;
+      text-align: center;
+    }
+    /* continue button */
+    .qb-continue-btn {
+      width: 100%;
+      height: 36px;
+      background: #FF6600;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Open Sans', -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: #fdfdfd;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1.2;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span class="status-time">09:41</span>
+    <div class="status-icons">
+      <!-- Signal bars -->
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+        <rect x="0"    y="7" width="3" height="5"  rx="0.6" fill="white" opacity="0.4"/>
+        <rect x="4.5"  y="5" width="3" height="7"  rx="0.6" fill="white" opacity="0.6"/>
+        <rect x="9"    y="2" width="3" height="10" rx="0.6" fill="white" opacity="0.8"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="0.6" fill="white"/>
+      </svg>
+      <!-- Wi-Fi -->
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <circle cx="8" cy="11" r="1.5" fill="white"/>
+        <path d="M4.5 7.8C5.5 6.7 6.7 6 8 6s2.5.7 3.5 1.8" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+        <path d="M2 5.2C3.6 3.3 5.7 2 8 2s4.4 1.3 6 3.2" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <!-- Battery -->
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0.5" y="1.5" width="20" height="9" rx="2" stroke="white" stroke-width="1" opacity="0.4"/>
+        <rect x="21.5" y="4" width="2.5" height="4" rx="1" fill="white" opacity="0.4"/>
+        <rect x="1.5" y="2.5" width="17" height="7" rx="1.2" fill="white"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- MAIN NAV HEADER -->
+  <div class="nav-header">
+    <div class="nav-left">
+      <!-- Hamburger -->
+      <div class="nav-icon">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="white">
+          <rect y="0"  width="18" height="2" rx="1"/>
+          <rect y="6"  width="18" height="2" rx="1"/>
+          <rect y="12" width="18" height="2" rx="1"/>
+        </svg>
+      </div>
+      <!-- Search -->
+      <div class="nav-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="8.5" cy="8.5" r="5" stroke="white" stroke-width="1.8"/>
+          <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="nav-logo">
+      <img src="https://www.figma.com/api/mcp/asset/076bd3da-21c5-4858-b6b2-00be9e87638b"
+           alt="betsson"
+           style="height:19px;width:111px;object-fit:contain;display:block;">
+    </div>
+
+    <div class="nav-right">
+      <!-- Balance / coin with + -->
+      <div class="nav-icon" style="position:relative;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="13" r="8" stroke="white" stroke-width="1.6"/>
+          <circle cx="11" cy="13" r="5.5" fill="white" fill-opacity="0.25"/>
+          <text x="11" y="17" text-anchor="middle" font-size="7" font-weight="700" fill="white" font-family="-apple-system,sans-serif">€</text>
+          <!-- green + badge -->
+          <circle cx="19" cy="6" r="5" fill="#40B840"/>
+          <line x1="19" y1="3.5" x2="19" y2="8.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="16.5" y1="6" x2="21.5" y2="6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <!-- User -->
+      <div class="nav-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.6"/>
+          <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT SUB-HEADER -->
+  <div class="chat-subheader">
+    <div class="icon-btn">
+      <!-- Orange back arrow -->
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M12 5L7 10L12 15" stroke="#FF6600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="subheader-title-area">
+      <span class="subheader-title">Ask AI</span>
+    </div>
+    <!-- empty right button placeholder -->
+    <div class="icon-btn"></div>
+  </div>
+
+  <!-- NOTICE BAR -->
+  <div class="notice-bar">
+    <span class="notice-text">You are interacting with an AI-powered assistant</span>
+  </div>
+
+  <!-- MESSAGES AREA -->
+  <div class="messages-area">
+
+    <!-- User message -->
+    <div class="user-message">
+      <div class="user-bubble">
+        <p>What are the odds that Spain wins the 2026 World Cup?</p>
+      </div>
+    </div>
+
+    <!-- AI response -->
+    <div class="ai-response">
+      <p class="ai-text" id="ai-line1"></p>
+
+      <!-- Event / market card -->
+      <div class="event-card" id="event-card">
+        <div class="event-card-header">
+          <div class="event-card-info">
+            <span class="event-name">Winner</span>
+            <span class="event-league">World Cup 2026</span>
+          </div>
+          <div class="event-right-area"></div>
+          <div class="event-divider"></div>
+        </div>
+        <a class="selection-btn">
+          <span class="sel-name">Spain</span>
+          <span class="sel-odds">5.45</span>
+        </a>
+      </div>
+
+      <p class="ai-text" id="ai-line2"></p>
+    </div>
+
+    <!-- Second user message (Mbappe) — hidden until sent -->
+    <div class="user-message" id="user-msg-2" style="opacity:0; display:none;">
+      <div class="user-bubble">
+        <p>What are the odds of Mbappe to score the first goal?</p>
+      </div>
+    </div>
+
+    <!-- Second AI response — hidden until triggered -->
+    <div class="ai-response" id="ai-response-2" style="display:none;">
+      <p class="ai-text" id="ai-line3"></p>
+
+      <div class="ppm-card" id="event-card-2" style="opacity:0;">
+        <div class="ppm-inner">
+
+          <!-- Event row -->
+          <div class="ppm-event-row">
+
+            <!-- Top: league + time/icons -->
+            <div class="ppm-top-row">
+              <div class="ppm-league">Champions League</div>
+              <div class="ppm-event-meta">
+                <!-- price boost icon -->
+                <div class="ppm-meta-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M7 1L3.5 6H6.5L4 11L9.5 5.5H6.5L9 1H7Z" fill="#FF9500"/>
+                  </svg>
+                </div>
+                <div class="ppm-meta-divider"></div>
+                <!-- live streaming icon -->
+                <div class="ppm-meta-icon">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <rect x="0.5" y="1.5" width="7" height="9" rx="1" fill="#FF3B30"/>
+                    <path d="M8 4.5L11.5 3V9L8 7.5V4.5Z" fill="#FF3B30"/>
+                  </svg>
+                </div>
+                <div class="ppm-meta-divider"></div>
+                <div class="ppm-meta-time">Tonight, 21:00</div>
+              </div>
+            </div>
+
+            <!-- Match info: teams + separator -->
+            <div class="ppm-match-info">
+              <div class="ppm-teams-scores">
+                <div class="ppm-teams">
+                  <!-- Real Madrid -->
+                  <div class="ppm-team-row">
+                    <span class="ppm-team-name">Real Madrid</span>
+                  </div>
+                  <!-- Chelsea -->
+                  <div class="ppm-team-row">
+                    <span class="ppm-team-name">Chelsea</span>
+                  </div>
+                </div>
+                <div class="ppm-score-col"></div>
+              </div>
+            </div>
+
+          </div><!-- /ppm-event-row -->
+
+          <!-- PPM market line -->
+          <div class="ppm-market-container">
+            <div class="ppm-market-line">
+              <div class="ppm-player-info">
+                <span class="ppm-player-name">Kylian Mbappe</span>
+                <span class="ppm-market-type">First Goalscorer</span>
+              </div>
+              <div class="ppm-sel-empty"></div>
+              <div class="ppm-sel-btn" id="selection-btn-2">
+                <div class="ppm-sel-value">
+                  <span class="ppm-sel-odds">1.28</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- PERMANENT BACKGROUND TRAY — always present, betslip badge slides on top -->
+  <div class="betslip-bg-tray"></div>
+
+  <!-- BETSLIP BAR — appears above input after bet is placed -->
+  <div class="betslip-bar" id="betslip-bar">
+    <div class="betslip-badge">
+      <div class="betslip-num-box">
+        <span class="betslip-num-text" id="betslip-count">1</span>
+      </div>
+      <div class="betslip-content">
+        <div class="betslip-single-label" id="betslip-type-label">Single</div>
+        <div class="betslip-odds-text" id="betslip-odds-text">5.45</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT FOOTER (text input) -->
+  <div class="chat-footer">
+    <div class="chat-input-field">
+      <input class="chat-input-real" id="chat-input" type="text" placeholder="Ask about odds, matches, teams..." autocomplete="off"/>
+    </div>
+    <div class="send-btn">
+      <!-- arrow-dropright chevron -->
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M9 6L15 12L9 18" stroke="#040406" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- QUICKBET PANEL — slides up from bottom on selection click -->
+  <div class="quickbet-overlay" id="quickbet-panel">
+    <div class="qb-outer">
+      <div class="qb-inner" id="qb-inner">
+
+        <!-- ── QUICKBET FORM ── -->
+        <div id="qb-form">
+
+          <!-- Drag bar -->
+          <div class="qb-drag-bar">
+            <div class="qb-drag-handle"></div>
+            <div class="qb-close-btn" id="qb-close">
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                <path d="M1 1L5 5L9 1" stroke="rgba(4,4,6,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Event info -->
+          <div class="qb-event-info">
+            <div class="qb-trash-btn">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M3.5 5.5h13" stroke="rgba(4,4,6,0.7)" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M8 5.5V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" stroke="rgba(4,4,6,0.7)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 5.5l.5 10a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1l.5-10" stroke="rgba(4,4,6,0.7)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M8.5 8.5v5M11.5 8.5v5" stroke="rgba(4,4,6,0.7)" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="qb-market-details">
+              <div class="qb-left">
+                <div class="qb-selection">
+                  <span class="qb-sel-label">Winner:</span>
+                  <span class="qb-sel-value">Spain</span>
+                </div>
+                <div class="qb-market-name">World Cup 2026</div>
+              </div>
+              <div class="qb-odds-val">5.45</div>
+            </div>
+          </div>
+
+          <!-- Stake row -->
+          <div class="qb-stake-row">
+            <div class="qb-stake-input">
+              <div class="qb-currency">€</div>
+              <div class="qb-amount"></div>
+            </div>
+            <div class="qb-add-btn">+5</div>
+            <div class="qb-add-btn">+10</div>
+            <div class="qb-add-btn">+20</div>
+          </div>
+
+          <!-- Utils row -->
+          <div class="qb-utils">
+            <div class="qb-toggle-row">
+              <div class="qb-switch"><div class="qb-switch-knob"></div></div>
+              <span class="qb-toggle-label">Remember stake</span>
+            </div>
+            <div class="qb-payout">
+              <span>Potential Payout</span>
+              <span>-</span>
+            </div>
+          </div>
+
+          <!-- Place bet -->
+          <div class="qb-place-btn" id="qb-place-btn">
+            <span class="btn-text">Place bet</span>
+            <div class="btn-spinner"></div>
+            <div class="btn-check">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="white" stroke-width="1.6"/>
+                <path d="M8 12.5l2.8 2.8 5.2-5.6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+        </div><!-- /#qb-form -->
+
+        <!-- ── BET PLACED RECEIPT ── -->
+        <div id="qb-receipt">
+
+          <!-- Close chevron — direct child of #qb-receipt so right:0 aligns with receipt edge -->
+          <div class="qb-close-btn" id="qb-close-receipt">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+              <path d="M1 1L5 5L9 1" stroke="rgba(4,4,6,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <!-- Drag bar -->
+          <div class="qb-drag-bar">
+            <div class="qb-drag-handle"></div>
+          </div>
+
+          <!-- Coupon details -->
+          <div class="qb-coupon-details">
+            <div class="qb-bet-header">
+              <div class="qb-bet-placed-title">BET PLACED</div>
+              <div class="qb-coupon-id-row">
+                <span class="qb-coupon-id-text">COUPON ID 45337492970278912</span>
+                <!-- copy icon -->
+                <div class="qb-copy-icon">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="6.5" y="2.5" width="10" height="10" rx="1.5" stroke="rgba(4,4,6,0.7)" stroke-width="1.2"/>
+                    <rect x="2.5" y="6.5" width="10" height="10" rx="1.5" fill="#f7f7f9" stroke="rgba(4,4,6,0.7)" stroke-width="1.2"/>
+                    <rect x="3.5" y="7.5" width="8" height="8" rx="0.8" fill="#f7f7f9"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="qb-date-text">Date Placed 28/08/2022, 14:17</div>
+            </div>
+            <!-- Bet share button (right-aligned via items-end on parent) -->
+            <div class="qb-share-btn">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 0.5v7" stroke="#040406" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M3.5 3L6 0.5L8.5 3" stroke="#040406" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 6.5v4.5h8V6.5" stroke="#040406" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="qb-share-text">Bet Share</span>
+            </div>
+          </div>
+
+          <!-- Continue button -->
+          <div class="qb-continue-btn" id="qb-continue-btn">Continue</div>
+
+        </div><!-- /#qb-receipt -->
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const CHAR_SPEED = 35; // ms per character
+
+  function typeText(el, text, onDone) {
+    el.style.opacity = '1';
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    el.appendChild(cursor);
+
+    const tick = setInterval(() => {
+      cursor.before(document.createTextNode(text[i++]));
+      if (i >= text.length) {
+        clearInterval(tick);
+        cursor.remove();
+        if (onDone) onDone();
+      }
+    }, CHAR_SPEED);
+  }
+
+  function fadeIn(el, onDone) {
+    el.style.opacity = '1';
+    if (onDone) setTimeout(onDone, 420);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const line1        = document.getElementById('ai-line1');
+    const card         = document.getElementById('event-card');
+    const line2        = document.getElementById('ai-line2');
+    const selBtn       = document.querySelector('.selection-btn');
+    const quickbet     = document.getElementById('quickbet-panel');
+    const qbClose      = document.getElementById('qb-close');
+
+    // ── Unified selection state ──────────────────────────────────────────────
+    // 1 selection  + drawerCollapsed=false → quickbet drawer opens
+    // 1 selection  + drawerCollapsed=true  → betslip bar (drawer was closed)
+    // 2 selections → betslip bar with count "2", drawer stays closed
+    // ─────────────────────────────────────────────────────────────────────────
+    let selSpain       = false;
+    let selMbappe      = false;
+    let drawerCollapsed = false; // true once user explicitly closes drawer
+
+    const betslipCountEl = document.getElementById('betslip-count');
+    const betslipTypeEl  = document.getElementById('betslip-type-label');
+    const betslipOddsEl2 = document.getElementById('betslip-odds-text');
+
+    function applySelectionState() {
+      const count = (selSpain ? 1 : 0) + (selMbappe ? 1 : 0);
+
+      if (count === 0) {
+        // Nothing selected — reset everything
+        drawerCollapsed = false;
+        quickbet.classList.remove('visible');
+        betslipBar.classList.remove('visible');
+        bgTray.classList.remove('visible');
+        syncPadding();
+
+      } else if (count === 1 && !drawerCollapsed) {
+        // First selection, drawer not yet collapsed — open drawer
+        betslipBar.classList.remove('visible');
+        bgTray.classList.remove('visible');
+        syncPadding();
+        quickbet.classList.add('visible');
+
+      } else {
+        // Drawer was collapsed (user closed it) OR 2+ selections — show betslip
+        drawerCollapsed = true;
+        quickbet.classList.remove('visible');
+        const ODDS_SPAIN  = 5.45;
+        const ODDS_MBAPPE = 1.28;
+        betslipCountEl.textContent = String(count);
+        betslipTypeEl.textContent  = count === 1 ? 'Single' : 'Combi';
+        if (count === 1) {
+          betslipOddsEl2.textContent = selSpain ? '5.45' : '1.28';
+        } else {
+          // Combined odds = product of all active selections
+          const combiOdds = (selSpain ? ODDS_SPAIN : 1) * (selMbappe ? ODDS_MBAPPE : 1);
+          betslipOddsEl2.textContent = combiOdds.toFixed(2);
+        }
+        bgTray.classList.add('visible');
+        betslipBar.classList.add('visible');
+        syncPadding();
+        triggerBetslipShimmer();
+      }
+    }
+
+    selBtn.addEventListener('click', () => {
+      selSpain = !selSpain;
+      selBtn.classList.toggle('active', selSpain);
+      applySelectionState();
+    });
+
+    // Chevron close → keep selections active, collapse drawer into betslip bar
+    qbClose.addEventListener('click', () => {
+      drawerCollapsed = true;
+      applySelectionState();
+    });
+
+    // Quick-add stake buttons (+5, +10, +20)
+    // Bug fix: derive odds from the active selection, not a hardcoded constant
+    function activeOdds() {
+      if (selSpain && selMbappe) return 5.45 * 1.28; // combi
+      if (selMbappe) return 1.28;
+      return 5.45; // Spain (default single)
+    }
+    const amountEl  = document.querySelector('.qb-amount');
+    const payoutEl  = document.querySelector('.qb-payout span:last-child');
+    let stake = 0;
+
+    function updateStake(add) {
+      stake += add;
+      amountEl.textContent = stake;
+      const payout = (stake * activeOdds()).toFixed(2);
+      payoutEl.textContent = '\u20AC' + payout;
+    }
+
+    document.querySelectorAll('.qb-add-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseInt(btn.textContent.replace('+', ''), 10);
+        updateStake(val);
+      });
+    });
+
+    // Place bet — loader → success → receipt
+    const placeBtnEl  = document.getElementById('qb-place-btn');
+    const qbInnerEl   = document.getElementById('qb-inner');
+    const continueBtnEl = document.getElementById('qb-continue-btn');
+    const qbCloseReceipt = document.getElementById('qb-close-receipt');
+
+    let placeBetTimer1 = null;
+    let placeBetTimer2 = null;
+
+    placeBtnEl.addEventListener('click', () => {
+      if (placeBtnEl.classList.contains('loading') || placeBtnEl.classList.contains('success')) return;
+      placeBtnEl.classList.add('loading');
+      placeBetTimer1 = setTimeout(() => {
+        placeBtnEl.classList.remove('loading');
+        placeBtnEl.classList.add('success');
+        // 0.6s after success tick → swap to receipt screen
+        placeBetTimer2 = setTimeout(() => {
+          qbInnerEl.classList.add('receipt-mode');
+        }, 600);
+      }, 2500);
+    });
+
+    const betslipBar = document.getElementById('betslip-bar');
+
+    function closeAndReset() {
+      // Cancel any pending place-bet timers so they can't fire after reset
+      clearTimeout(placeBetTimer1);
+      clearTimeout(placeBetTimer2);
+      placeBetTimer1 = null;
+      placeBetTimer2 = null;
+
+      // 1. Slide drawer out — remove visible class so CSS transition fires
+      quickbet.style.transition = '';
+      quickbet.style.transform  = '';
+      quickbet.classList.remove('visible');
+
+      // 2. Reset all selection state
+      selSpain        = false;
+      selMbappe       = false;
+      drawerCollapsed = false;
+      selBtn.classList.remove('active');
+      document.getElementById('selection-btn-2').classList.remove('active');
+
+      // 3. Hide betslip bar + tray directly — no dependency on later-declared vars
+      betslipBar.classList.remove('visible');
+      document.querySelector('.betslip-bg-tray').classList.remove('visible');
+      syncPadding();
+
+      // 4. Clean up inner form state after slide-out animation completes
+      setTimeout(() => {
+        qbInnerEl.classList.remove('receipt-mode');
+        placeBtnEl.classList.remove('success');
+        stake = 0;
+        amountEl.textContent = '';
+        payoutEl.textContent = '-';
+      }, 380);
+    }
+
+    continueBtnEl.addEventListener('click', closeAndReset);
+    qbCloseReceipt.addEventListener('click', closeAndReset);
+
+    // ── Drag-to-dismiss on receipt drag bar ──
+    const receiptDragBar = document.querySelector('#qb-receipt .qb-drag-bar');
+    let dragStartY = null;
+    let isDragging  = false;
+
+    function dragStart(e) {
+      if (!qbInnerEl.classList.contains('receipt-mode')) return;
+      dragStartY = e.touches ? e.touches[0].clientY : e.clientY;
+      isDragging  = true;
+      quickbet.style.transition = 'none'; // disable spring while dragging
+    }
+    function dragMove(e) {
+      if (!isDragging) return;
+      const y     = e.touches ? e.touches[0].clientY : e.clientY;
+      const delta = Math.max(0, y - dragStartY);
+      quickbet.style.transform = `translateY(${delta}px)`;
+    }
+    function dragEnd(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      const y     = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+      const delta = y - dragStartY;
+      dragStartY  = null;
+      if (delta > 60) {
+        closeAndReset(); // dragged far enough → dismiss
+      } else {
+        quickbet.style.transition = ''; // snap back
+        quickbet.style.transform  = '';
+      }
+    }
+
+    receiptDragBar.addEventListener('touchstart', dragStart, { passive: true });
+    receiptDragBar.addEventListener('mousedown',  dragStart);
+    document.addEventListener('touchmove', dragMove, { passive: true });
+    document.addEventListener('mousemove',  dragMove);
+    document.addEventListener('touchend',  dragEnd);
+    document.addEventListener('mouseup',   dragEnd);
+
+    // ── Chat input send ──
+    const chatInput   = document.getElementById('chat-input');
+    const sendBtn     = document.querySelector('.send-btn');
+    const messagesArea = document.querySelector('.messages-area');
+    const userMsg2    = document.getElementById('user-msg-2');
+    const aiResponse2 = document.getElementById('ai-response-2');
+    const selBtn2     = document.getElementById('selection-btn-2');
+
+    const BETSLIP_BAR_H  = 56;  // tray height
+    const SCROLL_GAP     = 16;  // gap between card bottom and tray top
+    // Padding is always BETSLIP_BAR_H + SCROLL_GAP so smartScroll always has
+    // enough scroll range to park the card above the betslip landing zone.
+    // The tray is a visual overlay only — it shows/hides independently.
+    const BASE_PAD_BTM   = BETSLIP_BAR_H + SCROLL_GAP; // 72px, permanent
+
+    function syncPadding() {
+      messagesArea.style.paddingBottom = BASE_PAD_BTM + 'px';
+    }
+
+    // Generic scroll to bottom (text lines, user bubbles)
+    function scrollBottom() {
+      messagesArea.scrollTo({ top: messagesArea.scrollHeight, behavior: 'smooth' });
+    }
+
+    // Smart scroll: positions el so its bottom lands just above where the betslip
+    // will appear — pre-reserving that space so clicking the odds button later
+    // causes zero viewport movement.
+    function smartScroll(el) {
+      const elRect   = el.getBoundingClientRect();
+      const areaRect = messagesArea.getBoundingClientRect();
+
+      // Absolute bottom of el within the scrollable content
+      const elBottomInContent = elRect.bottom - areaRect.top + messagesArea.scrollTop;
+
+      // Leave exactly betslip height + 16px gap below the card — the betslip
+      // will slide into that reserved space without needing any re-scroll.
+      const reservedBottom = BETSLIP_BAR_H + 16;
+      const targetScrollTop = elBottomInContent - (messagesArea.clientHeight - reservedBottom);
+
+      messagesArea.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+    }
+
+    function sendMessage() {
+      const val = chatInput.value.trim();
+      if (!val) return;
+      chatInput.value = '';
+      syncPadding(); // ensure padding is correct for current betslip state
+
+      // Show user bubble
+      userMsg2.style.display = 'flex';
+      setTimeout(() => { userMsg2.style.opacity = '1'; userMsg2.style.transition = 'opacity 0.3s'; scrollBottom(); }, 20);
+
+      // Show second AI response block after short delay
+      setTimeout(() => {
+        aiResponse2.style.display = 'flex';
+        scrollBottom();
+
+        // Type line 3
+        setTimeout(() => {
+          typeText(document.getElementById('ai-line3'),
+            "Kylian Mbappe is one of the top favourites to score the first goal. Here are the current odds:", () => {
+
+            // Scroll to position BEFORE card appears (card is opacity:0, still in layout)
+            const card2 = document.getElementById('event-card-2');
+            smartScroll(card2);
+
+            // Fade in after scroll has settled — card appears in-place, no viewport jump
+            setTimeout(() => {
+              fadeIn(card2, () => {
+                // no scroll after fade — card is already in position
+              });
+            }, 450);
+          });
+        }, 800);
+      }, 1000);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+    const betslipBadgeEl = document.querySelector('.betslip-badge');
+    const bgTray = document.querySelector('.betslip-bg-tray');
+
+    function triggerBetslipShimmer() {
+      betslipBadgeEl.classList.remove('betslip-shimmer');
+      void betslipBadgeEl.offsetWidth;
+      betslipBadgeEl.classList.add('betslip-shimmer');
+      betslipBadgeEl.addEventListener('animationend', () => {
+        betslipBadgeEl.classList.remove('betslip-shimmer');
+      }, { once: true });
+    }
+
+    // Mbappe selection button — participates in unified selection state
+    selBtn2.addEventListener('click', () => {
+      selMbappe = !selMbappe;
+      selBtn2.classList.toggle('active', selMbappe);
+      applySelectionState();
+    });
+
+    const text1 = "Based on current betting markets, Spain is one of the favourite to win the 2026 World Cup. Here's what the odds look like:";
+    const text2 = "Would you like to compare Spain's odds with other leading contenders?";
+
+    // Step 1 — start typing line 1 after 1.2 s
+    setTimeout(() => {
+      typeText(line1, text1, () => {
+        scrollBottom();
+
+        // Step 2 — scroll to card position while still invisible, then fade in
+        setTimeout(() => {
+          smartScroll(card);
+          setTimeout(() => {
+            fadeIn(card, () => {
+              // Step 3 — type line 2 400 ms after card appears, no scroll
+              setTimeout(() => {
+                typeText(line2, text2, () => {
+                  // no scroll — content is already visible
+                });
+              }, 400);
+            });
+          }, 450); // wait for smooth scroll to settle before revealing card
+        }, 600);
+      });
+    }, 1200);
+  });
+</script>
+</body>
+</html>
